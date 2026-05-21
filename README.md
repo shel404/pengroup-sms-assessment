@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SMS Registry
 
-## Getting Started
+Student Management System — Registry Module. Built as a technical assessment for PEN Global.
 
-First, run the development server:
+## Tech Stack
+
+- **Next.js 14** (App Router) with TypeScript
+- **PostgreSQL 15** via Prisma 7 ORM
+- **Tailwind CSS 3** with shadcn components
+- **Docker** for local database
+
+## How to Run Locally
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- Docker (or a running PostgreSQL instance)
+
+### Setup
 
 ```bash
+# 1. Clone and install
+git clone <repo-url>
+cd sms-registry
+npm install
+
+# 2. Start PostgreSQL (if using Docker)
+docker run -d --name sms-postgres \
+  -e POSTGRES_USER=smsadmin \
+  -e POSTGRES_PASSWORD=smsadmin123 \
+  -e POSTGRES_DB=sms_registry \
+  -p 5433:5432 postgres:15
+
+# 3. Configure environment
+cp .env.example .env
+# Edit .env if not using the Docker defaults above
+
+# 4. Run migrations and seed
+npx prisma migrate dev --name init
+npx prisma db seed
+
+# 5. Start dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable       | Description                                                                                             |
+| -------------- | ------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL` | PostgreSQL connection string. Format: `postgresql://<user>:<password>@<host>:<port>/<db>?schema=public` |
 
-## Learn More
+See `.env.example` for the placeholder.
 
-To learn more about Next.js, take a look at the following resources:
+## Seed Data
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Running `npx prisma db seed` loads:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **2 programmes**: BSc Computer Science (fee £4,500), BSc Business Administration (fee £3,800)
+- **5 students** with student IDs like `SMS-2026-0001`, mixed statuses (Enrolled, Deferred, Withdrawn, Completed)
+- **Fee records & payments**: partial payments create overdue scenarios
+- **3 assessments**: past-deadline, open, and future
+- **Submissions & grades**: some on-time, one late, some grades published, some withheld
+- **Users**: 1 staff + 5 student accounts for the role toggle
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+├── app/                  # Next.js App Router pages
+├── components/ui/        # shadcn components
+├── generated/prisma/     # Prisma client output
+└── lib/
+    ├── prisma.ts         # Shared client singleton
+    └── utils.ts          # cn() utility
+prisma/
+├── schema.prisma         # Data model
+├── seed.ts               # Demo data loader
+├── config.ts             # Prisma 7 configuration
+└── migrations/           # DB migration history
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## AI Usage
+
+This project was built with the assistance of opencode (with Deepseek v4 pro (high) as the coding model) throughout all phases, execpt for the planning. The planning was done with the help of Claude Sonnet 4.6 after multiple interations of manual review. Key areas of AI collaboration:
+
+- **Schema design**: AI proposed the 8-model schema and validated it against the assessment spec, catching details like `isPublished` needing to be per-student (not per-assessment) and the composite unique constraint on `[studentId, assessmentId]`.
+- **Seed script**: AI generated the full seed with realistic data, edge cases (partial payments for overdue scenarios, late submissions, withheld grades).
+- **Development planning**: AI cross-referenced the technical assessment PDF against the development plan, identifying gaps (missing PostgreSQL setup steps, missing real-time balance refresh) and filled them.

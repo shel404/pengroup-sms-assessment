@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Programme ───────────────────────────────────────────────
+
+model Programme {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  feeAmount Float
+  students  Student[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// ─── Student ─────────────────────────────────────────────────
+
+model Student {
+  id           String    @id @default(cuid())
+  studentId    String    @unique
+  fullName     String
+  email        String    @unique
+  dob          DateTime
+  academicYear String
+  status       String    @default("Enrolled")
+  programmeId  String
+  programme    Programme @relation(fields: [programmeId], references: [id])
+  fee          Fee?
+  payments     PaymentTransaction[]
+  submissions  Submission[]
+  grades       Grade[]
+  user         User?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// ─── Fee ─────────────────────────────────────────────────────
+
+model Fee {
+  id          String   @id @default(cuid())
+  studentId   String   @unique
+  student     Student  @relation(fields: [studentId], references: [id])
+  totalAmount Float
+  dueDate     DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── PaymentTransaction ──────────────────────────────────────
+
+model PaymentTransaction {
+  id              String   @id @default(cuid())
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id])
+  amount          Float
+  date            DateTime @default(now())
+  referenceNumber String   @unique
+  createdAt       DateTime @default(now())
+}
+
+// ─── User ────────────────────────────────────────────────────
+
+enum Role {
+  STAFF
+  STUDENT
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  role      Role
+  studentId String?  @unique
+  student   Student? @relation(fields: [studentId], references: [id])
+  assessments Assessment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Assessment ──────────────────────────────────────────────
+
+model Assessment {
+  id          String       @id @default(cuid())
+  title       String
+  module      String
+  deadline    DateTime
+  createdById String
+  createdBy   User         @relation(fields: [createdById], references: [id])
+  submissions Submission[]
+  grades      Grade[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+// ─── Submission ──────────────────────────────────────────────
+
+model Submission {
+  id           String     @id @default(cuid())
+  studentId    String
+  student      Student    @relation(fields: [studentId], references: [id])
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id])
+  fileUrl      String
+  submittedAt  DateTime   @default(now())
+  isLate       Boolean    @default(false)
+
+  @@unique([studentId, assessmentId])
+}
+
+// ─── Grade ───────────────────────────────────────────────────
+
+model Grade {
+  id             String     @id @default(cuid())
+  studentId      String
+  student        Student    @relation(fields: [studentId], references: [id])
+  assessmentId   String
+  assessment     Assessment @relation(fields: [assessmentId], references: [id])
+  numericGrade   Int
+  classification String
+  isPublished    Boolean    @default(false)
+
+  @@unique([studentId, assessmentId])
+}
