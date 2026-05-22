@@ -29,9 +29,16 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("sms-role");
+    const isStaffPath = window.location.pathname.startsWith("/staff");
+
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
+        if (isStaffPath && parsed.role === "STUDENT") {
+          setState({ role: "STAFF" });
+          localStorage.setItem("sms-role", JSON.stringify({ role: "STAFF" }));
+          return;
+        }
         setState(parsed);
       } catch {
         localStorage.removeItem("sms-role");
