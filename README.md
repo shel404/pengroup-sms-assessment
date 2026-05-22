@@ -30,7 +30,7 @@ To stop: `docker compose down`. To wipe the database: `docker compose down -v`.
 
 ```bash
 # 1. Clone and install
-git clone <repo-url>
+git clone https://github.com/shel404/pengroup-sms-assessment.git
 cd sms-registry
 npm install
 
