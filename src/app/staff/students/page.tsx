@@ -42,6 +42,13 @@ export default function StudentsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [programmeFilter, setProgrammeFilter] = useState("");
+  const [programmes, setProgrammes] = useState<{ name: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/programmes")
+      .then((r) => r.json())
+      .then(setProgrammes);
+  }, []);
 
   const fetchStudents = useCallback(async () => {
     setLoading(true);
@@ -109,8 +116,11 @@ export default function StudentsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All programmes</SelectItem>
-            <SelectItem value="Computer Science">Computer Science</SelectItem>
-            <SelectItem value="Business">Business</SelectItem>
+            {programmes.map((p) => (
+              <SelectItem key={p.name} value={p.name}>
+                {p.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

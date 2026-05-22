@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, requireOwnership } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
@@ -25,6 +25,10 @@ export async function POST(
       { error: "File and studentId are required" },
       { status: 400 }
     );
+  }
+
+  if (!requireOwnership(request, studentId)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   if (file.size === 0) {
