@@ -1,0 +1,76 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRole } from "@/lib/role-context";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Shield, User } from "lucide-react";
+
+interface StudentOption {
+  id: string;
+  fullName: string;
+  studentId: string;
+}
+
+export function RoleToggle() {
+  const { role, userId, switchRole } = useRole();
+  const [students, setStudents] = useState<StudentOption[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState(userId || "");
+
+  useEffect(() => {
+    async function loadStudents() {
+      const res = await fetch("/api/students?status=Enrolled&limit=50");
+      const data = await res.json();
+      setStudents(data);
+    }
+    loadStudents();
+  }, []);
+
+  useEffect(() => {
+    setSelectedStudentId(userId || "");
+  }, [userId]);
+
+  function handleStudentSelect(studentId: string) {
+    if (!studentId) return;
+    switchRole("STUDENT", studentId);
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      {role === "STAFF" ? (
+        <div className="flex items-center gap-2">
+          <Shield className="size-4 text-primary" />
+          <span className="text-sm font-medium text-primary">Staff</span>
+          <Select value={selectedStudentId} onValueChange={(v) => v && handleStudentSelect(v)}>
+            <SelectTrigger className="w-[200px] h-8 text-xs">
+              <SelectValue placeholder="Switch to Student..." />
+            </SelectTrigger>
+            <SelectContent>
+              {students.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.fullName} ({s.studentId})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => switchRole("STAFF")}
+          className="gap-2"
+        >
+          <User className="size-4" />
+          Switch to Staff
+        </Button>
+      )}
+    </div>
+  );
+}

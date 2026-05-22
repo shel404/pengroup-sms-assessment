@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { RoleToggle } from "@/components/role-toggle";
 import { useState } from "react";
 
 const navItems = [
@@ -85,6 +86,12 @@ export default function StaffLayout({
             );
           })}
         </nav>
+
+        {!collapsed && (
+          <div className="p-3 border-t">
+            <RoleToggle />
+          </div>
+        )}
       </aside>
 
       {/* Content */}
