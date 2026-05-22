@@ -77,11 +77,51 @@ export async function PATCH(
 
   // Check email uniqueness if changed
   if (email && email !== student.email) {
-    const existing = await prisma.student.findUnique({ where: { email } });
+    const trimmedEmail = email.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+    }
+    const existing = await prisma.student.findUnique({ where: { email: trimmedEmail } });
     if (existing) {
       return NextResponse.json(
         { error: "A student with this email already exists" },
         { status: 409 }
+      );
+    }
+  }
+
+  // Validate name length if provided
+  if (fullName !== undefined) {
+    const trimmedName = fullName.trim();
+    if (trimmedName.length < 2 || trimmedName.length > 100) {
+      return NextResponse.json(
+        { error: "Full name must be between 2 and 100 characters" },
+        { status: 400 }
+      );
+    }
+  }
+
+  // Validate DOB if provided
+  if (dob !== undefined) {
+    const dobDate = new Date(dob);
+    if (isNaN(dobDate.getTime())) {
+      return NextResponse.json({ error: "Invalid date of birth" }, { status: 400 });
+    }
+    if (dobDate > new Date()) {
+      return NextResponse.json(
+        { error: "Date of birth cannot be in the future" },
+        { status: 400 }
+      );
+    }
+  }
+
+  // Validate academic year format if provided
+  if (academicYear !== undefined) {
+    if (!/^\d{4}\/\d{4}$/.test(academicYear.trim())) {
+      return NextResponse.json(
+        { error: "Academic year must be in format YYYY/YYYY (e.g. 2026/2027)" },
+        { status: 400 }
       );
     }
   }

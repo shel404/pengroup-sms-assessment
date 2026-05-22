@@ -28,18 +28,39 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { title, module: moduleName, deadline, createdById } = body;
 
-  if (!title || !moduleName || !deadline) {
+  const trimmedTitle = title?.trim();
+  const trimmedModule = moduleName?.trim();
+
+  if (!trimmedTitle || !trimmedModule || !deadline) {
     return NextResponse.json(
       { error: "Title, module, and deadline are required" },
       { status: 400 }
     );
   }
 
+  if (trimmedTitle.length > 200 || trimmedModule.length > 50) {
+    return NextResponse.json(
+      { error: "Title must be under 200 characters, module under 50" },
+      { status: 400 }
+    );
+  }
+
+  const deadlineDate = new Date(deadline);
+  if (isNaN(deadlineDate.getTime())) {
+    return NextResponse.json({ error: "Invalid deadline date" }, { status: 400 });
+  }
+  if (deadlineDate <= new Date()) {
+    return NextResponse.json(
+      { error: "Deadline must be in the future" },
+      { status: 400 }
+    );
+  }
+
   const assessment = await prisma.assessment.create({
     data: {
-      title,
-      module: moduleName,
-      deadline: new Date(deadline),
+      title: trimmedTitle,
+      module: trimmedModule,
+      deadline: deadlineDate,
       createdById: createdById || (await getDefaultStaffId()),
     },
     include: { createdBy: { select: { name: true } } },

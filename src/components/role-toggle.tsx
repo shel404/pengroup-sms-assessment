@@ -23,13 +23,18 @@ export function RoleToggle() {
   const [students, setStudents] = useState<StudentOption[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState(userId || "");
 
+  const loadStudents = async () => {
+    const res = await fetch("/api/students?status=Enrolled&limit=50");
+    const data = await res.json();
+    setStudents(data);
+  };
+
+  useEffect(() => { loadStudents(); }, []);
+
   useEffect(() => {
-    async function loadStudents() {
-      const res = await fetch("/api/students?status=Enrolled&limit=50");
-      const data = await res.json();
-      setStudents(data);
-    }
-    loadStudents();
+    function onRefresh() { loadStudents(); }
+    window.addEventListener("student-list-refresh", onRefresh);
+    return () => window.removeEventListener("student-list-refresh", onRefresh);
   }, []);
 
   useEffect(() => {

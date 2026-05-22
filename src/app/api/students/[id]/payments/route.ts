@@ -23,6 +23,19 @@ export async function POST(
     );
   }
 
+  if (date) {
+    const paymentDate = new Date(date);
+    if (isNaN(paymentDate.getTime())) {
+      return NextResponse.json({ error: "Invalid payment date" }, { status: 400 });
+    }
+    if (paymentDate > new Date()) {
+      return NextResponse.json(
+        { error: "Payment date cannot be in the future" },
+        { status: 400 }
+      );
+    }
+  }
+
   const student = await prisma.student.findUnique({
     where: { id: params.id },
     include: { fee: true, payments: true },

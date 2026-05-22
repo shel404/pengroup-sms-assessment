@@ -27,6 +27,18 @@ export async function POST(
     );
   }
 
+  if (file.size === 0) {
+    return NextResponse.json({ error: "File cannot be empty" }, { status: 400 });
+  }
+
+  const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+  if (file.size > MAX_SIZE) {
+    return NextResponse.json(
+      { error: "File size must be under 10MB" },
+      { status: 400 }
+    );
+  }
+
   if (!ALLOWED_MIMES.includes(file.type)) {
     return NextResponse.json(
       { error: "Only PDF and DOCX files are allowed" },
@@ -40,6 +52,15 @@ export async function POST(
 
   if (!assessment) {
     return NextResponse.json({ error: "Assessment not found" }, { status: 404 });
+  }
+
+  // Validate student exists (protects against stale localStorage user IDs)
+  const student = await prisma.student.findUnique({ where: { id: studentId } });
+  if (!student) {
+    return NextResponse.json(
+      { error: "Student not found. Your session may be stale — switch to Staff then back to Student." },
+      { status: 404 }
+    );
   }
 
   const isLate = new Date() > assessment.deadline;

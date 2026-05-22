@@ -72,6 +72,7 @@ export default function EnrolStudentPage() {
       return;
     }
 
+    window.dispatchEvent(new CustomEvent("student-list-refresh"));
     router.push("/staff/students");
   }
 
@@ -114,12 +115,13 @@ export default function EnrolStudentPage() {
               <Input
                 id="dob"
                 type="date"
+                max={new Date().toISOString().split("T")[0]}
                 value={form.dob}
                 onChange={(e) => update("dob", e.target.value)}
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-72">
               <Label htmlFor="programme">Programme *</Label>
               <Select
                 value={form.programmeId}
@@ -163,7 +165,7 @@ export default function EnrolStudentPage() {
                       <SelectItem key={s} value={s}>
                         {s}
                       </SelectItem>
-                    )
+                    ),
                   )}
                 </SelectContent>
               </Select>

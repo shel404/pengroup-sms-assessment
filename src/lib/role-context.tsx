@@ -39,6 +39,24 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem("sms-role", JSON.stringify({ role: "STAFF" }));
           return;
         }
+        // Validate stored userId still exists (DB may have been reseeded)
+        if (parsed.userId && parsed.role === "STUDENT") {
+          fetch(`/api/students/${parsed.userId}`, {
+            headers: { "x-sms-role": "STAFF" },
+          })
+            .then((r) => {
+              if (!r.ok) {
+                localStorage.removeItem("sms-role");
+                setState({ role: "STAFF" });
+              } else {
+                setState(parsed);
+              }
+            })
+            .catch(() => {
+              setState(parsed); // network error, keep existing state
+            });
+          return;
+        }
         setState(parsed);
       } catch {
         localStorage.removeItem("sms-role");

@@ -135,6 +135,7 @@ export default function StudentDetailPage() {
     );
     setEditMode(false);
     setSaving(false);
+    window.dispatchEvent(new CustomEvent("student-list-refresh"));
   }
 
   function statusBadge(status: string) {
@@ -275,6 +276,7 @@ export default function StudentDetailPage() {
                     <Label>Date of Birth</Label>
                     <Input
                       type="date"
+                      max={new Date().toISOString().split("T")[0]}
                       value={editForm.dob}
                       onChange={(e) =>
                         setEditForm((p) => ({ ...p, dob: e.target.value }))
@@ -543,6 +545,7 @@ export default function StudentDetailPage() {
                     <Input
                       id="payDate"
                       type="date"
+                      max={new Date().toISOString().split("T")[0]}
                       value={paymentForm.date}
                       onChange={(e) =>
                         setPaymentForm((p) => ({ ...p, date: e.target.value }))

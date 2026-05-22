@@ -37,6 +37,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY scripts/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+RUN mkdir -p public/uploads && chown nextjs:nodejs public/uploads
+
 USER nextjs
 
 EXPOSE 3000

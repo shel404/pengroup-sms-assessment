@@ -29,6 +29,16 @@ export async function POST(request: NextRequest) {
 
   const classification = classify(grade);
 
+  const student = await prisma.student.findUnique({ where: { id: studentId } });
+  if (!student) {
+    return NextResponse.json({ error: "Student not found" }, { status: 404 });
+  }
+
+  const assessment = await prisma.assessment.findUnique({ where: { id: assessmentId } });
+  if (!assessment) {
+    return NextResponse.json({ error: "Assessment not found" }, { status: 404 });
+  }
+
   const result = await prisma.grade.upsert({
     where: {
       studentId_assessmentId: { studentId, assessmentId },

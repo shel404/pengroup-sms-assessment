@@ -70,14 +70,43 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const trimmedName = fullName.trim();
+  const trimmedEmail = email.trim();
+  const trimmedYear = academicYear.trim();
+
+  if (trimmedName.length < 2 || trimmedName.length > 100) {
+    return NextResponse.json(
+      { error: "Full name must be between 2 and 100 characters" },
+      { status: 400 }
+    );
+  }
+
+  if (!/^\d{4}\/\d{4}$/.test(trimmedYear)) {
+    return NextResponse.json(
+      { error: "Academic year must be in format YYYY/YYYY (e.g. 2026/2027)" },
+      { status: 400 }
+    );
+  }
+
+  const dobDate = new Date(dob);
+  if (isNaN(dobDate.getTime())) {
+    return NextResponse.json({ error: "Invalid date of birth" }, { status: 400 });
+  }
+  if (dobDate > new Date()) {
+    return NextResponse.json(
+      { error: "Date of birth cannot be in the future" },
+      { status: 400 }
+    );
+  }
+
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  if (!emailRegex.test(trimmedEmail)) {
     return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
   }
 
   // Check duplicate email
-  const existing = await prisma.student.findUnique({ where: { email } });
+  const existing = await prisma.student.findUnique({ where: { email: trimmedEmail } });
   if (existing) {
     return NextResponse.json(
       { error: "A student with this email already exists" },
@@ -104,11 +133,11 @@ export async function POST(request: NextRequest) {
     return tx.student.create({
       data: {
         studentId,
-        fullName,
-        email,
-        dob: new Date(dob),
+        fullName: trimmedName,
+        email: trimmedEmail,
+        dob: dobDate,
         programmeId,
-        academicYear,
+        academicYear: trimmedYear,
         status: status || "Enrolled",
       },
       include: {

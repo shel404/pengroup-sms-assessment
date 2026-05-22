@@ -112,6 +112,7 @@ export default function AssessmentsPage() {
                 <Label>Submission Deadline</Label>
                 <Input
                   type="datetime-local"
+                  min={new Date().toISOString().slice(0, 16)}
                   value={form.deadline}
                   onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))}
                 />
