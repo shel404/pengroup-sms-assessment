@@ -9,7 +9,17 @@ Student Management System — Registry Module. Built as a technical assessment f
 - **Tailwind CSS 3** with shadcn components
 - **Docker** for local database
 
-## How to Run Locally
+## Quick Start (Docker)
+
+```bash
+docker compose up --build
+```
+
+That's it. This starts both PostgreSQL and the app, runs migrations and seed, and serves the app at [http://localhost:3333](http://localhost:3333).
+
+To stop: `docker compose down`. To wipe the database: `docker compose down -v`.
+
+## How to Run Locally (without Docker)
 
 ### Prerequisites
 
@@ -24,16 +34,12 @@ git clone <repo-url>
 cd sms-registry
 npm install
 
-# 2. Start PostgreSQL (if using Docker)
-docker run -d --name sms-postgres \
-  -e POSTGRES_USER=smsadmin \
-  -e POSTGRES_PASSWORD=smsadmin123 \
-  -e POSTGRES_DB=sms_registry \
-  -p 5433:5432 postgres:15
+# 2. Download and install PostgreSQL
+https://www.postgresql.org/download/
 
 # 3. Configure environment
 cp .env.example .env
-# Edit .env if not using the Docker defaults above
+# Edit .env
 
 # 4. Run migrations and seed
 npx prisma migrate dev --name init

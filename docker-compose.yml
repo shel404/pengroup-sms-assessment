@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: smsadmin
+      POSTGRES_PASSWORD: smsadmin123
+      POSTGRES_DB: sms_registry
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smsadmin -d sms_registry"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    image: sms-registry
+    ports:
+      - "3333:3000"
+    environment:
+      DATABASE_URL: "postgresql://smsadmin:smsadmin123@db:5432/sms_registry?schema=public"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
