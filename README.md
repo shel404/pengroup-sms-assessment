@@ -7,15 +7,17 @@ Student Management System — Registry Module. Built as a technical assessment f
 - **Next.js 14** (App Router) with TypeScript
 - **PostgreSQL 15** via Prisma 7 ORM
 - **Tailwind CSS 3** with shadcn components
-- **Docker** for local database
+- **Docker** for containerized deployment
 
 ## Quick Start (Docker)
 
 ```bash
+git clone https://github.com/shel404/pengroup-sms-assessment.git
+cd sms-registry
 docker compose up --build
 ```
 
-That's it. This starts both PostgreSQL and the app, runs migrations and seed, and serves the app at [http://localhost:3333](http://localhost:3333).
+This starts PostgreSQL, runs migrations and seed, then serves the app at [http://localhost:3333](http://localhost:3333).
 
 To stop: `docker compose down`. To wipe the database: `docker compose down -v`.
 
@@ -24,32 +26,20 @@ To stop: `docker compose down`. To wipe the database: `docker compose down -v`.
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Docker (or a running PostgreSQL instance)
+- PostgreSQL 15 ([download](https://www.postgresql.org/download/))
 
 ### Setup
 
 ```bash
-# 1. Clone and install
-git clone https://github.com/shel404/pengroup-sms-assessment.git
-cd sms-registry
 npm install
-
-# 2. Download and install PostgreSQL
-https://www.postgresql.org/download/
-
-# 3. Configure environment
 cp .env.example .env
-# Edit .env
-
-# 4. Run migrations and seed
+# Edit .env with your PostgreSQL connection string
 npx prisma migrate dev --name init
 npx prisma db seed
-
-# 5. Start dev server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3333](http://localhost:3333).
 
 ## Environment Variables
 
@@ -79,17 +69,21 @@ src/
 ├── generated/prisma/     # Prisma client output
 └── lib/
     ├── prisma.ts         # Shared client singleton
+    ├── auth.ts           # Server-side role/ownership checks
+    ├── role-context.tsx   # Role toggle context & provider
     └── utils.ts          # cn() utility
 prisma/
 ├── schema.prisma         # Data model
 ├── seed.ts               # Demo data loader
 ├── config.ts             # Prisma 7 configuration
 └── migrations/           # DB migration history
+scripts/
+└── entrypoint.sh         # Docker startup script
 ```
 
 ## AI Usage
 
-This project was built with the assistance of opencode (with Deepseek v4 pro (high) as the coding model) throughout all phases, execpt for the planning. The planning was done with the help of Claude Sonnet 4.6 after multiple interations of manual review. Key areas of AI collaboration:
+This project was built with the assistance of opencode (with Deepseek v4 pro as the coding model) throughout all phases, except for the planning. The planning was done with the help of Claude Sonnet 4.6 after multiple iterations of manual review. Key areas of AI collaboration:
 
 - **Schema design**: AI proposed the 8-model schema and validated it against the assessment spec, catching details like `isPublished` needing to be per-student (not per-assessment) and the composite unique constraint on `[studentId, assessmentId]`.
 - **Seed script**: AI generated the full seed with realistic data, edge cases (partial payments for overdue scenarios, late submissions, withheld grades).
