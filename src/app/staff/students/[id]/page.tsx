@@ -70,6 +70,18 @@ export default function StudentDetailPage() {
   const [tab, setTab] = useState<"profile" | "fees" | "submissions" | "grades">(
     "profile"
   );
+  const [paymentForm, setPaymentForm] = useState({
+    amount: "",
+    referenceNumber: "",
+    date: new Date().toISOString().split("T")[0],
+  });
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
+  const [paymentSuccess, setPaymentSuccess] = useState("");
+  const [paymentSort, setPaymentSort] = useState<{
+    key: "date" | "amount";
+    dir: "asc" | "desc";
+  }>({ key: "date", dir: "desc" });
 
   const [editForm, setEditForm] = useState({
     fullName: "",
@@ -133,6 +145,52 @@ export default function StudentDetailPage() {
       Completed: "outline",
     };
     return <Badge variant={v[status] || "secondary"}>{status}</Badge>;
+  }
+
+  async function handleRecordPayment(e: React.FormEvent) {
+    e.preventDefault();
+    setPaymentError("");
+    setPaymentSuccess("");
+    setPaymentSubmitting(true);
+
+    const res = await fetch(`/api/students/${id}/payments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount: paymentForm.amount,
+        referenceNumber: paymentForm.referenceNumber.trim(),
+        date: paymentForm.date || undefined,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setPaymentError(data.error || "Failed to record payment");
+      setPaymentSubmitting(false);
+      return;
+    }
+
+    // Refresh student data for real-time balance update
+    const studentRes = await fetch(`/api/students/${id}`);
+    const updatedStudent = await studentRes.json();
+    setStudent(updatedStudent);
+    setEditForm({
+      fullName: updatedStudent.fullName,
+      email: updatedStudent.email,
+      dob: updatedStudent.dob?.split("T")[0] || "",
+      programmeId: updatedStudent.programme?.id || "",
+      academicYear: updatedStudent.academicYear,
+      status: updatedStudent.status,
+    });
+
+    setPaymentForm({
+      amount: "",
+      referenceNumber: "",
+      date: new Date().toISOString().split("T")[0],
+    });
+    setPaymentSuccess("Payment recorded successfully.");
+    setPaymentSubmitting(false);
   }
 
   if (loading) return <p className="text-muted-foreground p-8">Loading...</p>;
@@ -311,86 +369,194 @@ export default function StudentDetailPage() {
 
       {/* Fees Tab */}
       {tab === "fees" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Fees &amp; Payments</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {student.fee ? (
-              <>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Fees &amp; Payments</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {student.fee ? (
+                <>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-muted p-3 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Total Fee</p>
+                      <p className="text-lg font-bold">£{student.fee.totalAmount.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-muted p-3 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Amount Paid</p>
+                      <p className="text-lg font-bold text-green-600">
+                        £{student.balance.paid.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="bg-muted p-3 rounded-lg">
+                      <p className="text-xs text-muted-foreground">
+                        Outstanding
+                        {student.balance.isOverdue && (
+                          <Badge variant="destructive" className="ml-1 text-xs">
+                            Overdue
+                          </Badge>
+                        )}
+                      </p>
+                      <p
+                        className={`text-lg font-bold ${
+                          student.balance.outstanding > 0
+                            ? "text-destructive"
+                            : "text-green-600"
+                        }`}
+                      >
+                        £{student.balance.outstanding.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                  {student.fee.dueDate && (
+                    <p className="text-sm text-muted-foreground">
+                      Due date: {new Date(student.fee.dueDate).toLocaleDateString()}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="text-muted-foreground">No fee record assigned.</p>
+              )}
+
+              {student.payments.length > 0 ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead
+                          className="cursor-pointer select-none hover:text-foreground"
+                          onClick={() =>
+                            setPaymentSort((s) => ({
+                              key: "date",
+                              dir: s.key === "date" && s.dir === "asc" ? "desc" : "asc",
+                            }))
+                          }
+                        >
+                          Date{" "}
+                          {paymentSort.key === "date"
+                            ? paymentSort.dir === "asc" ? "\u2191" : "\u2193"
+                            : ""}
+                        </TableHead>
+                        <TableHead>Reference</TableHead>
+                        <TableHead
+                          className="text-right cursor-pointer select-none hover:text-foreground"
+                          onClick={() =>
+                            setPaymentSort((s) => ({
+                              key: "amount",
+                              dir: s.key === "amount" && s.dir === "asc" ? "desc" : "asc",
+                            }))
+                          }
+                        >
+                          Amount{" "}
+                          {paymentSort.key === "amount"
+                            ? paymentSort.dir === "asc" ? "\u2191" : "\u2193"
+                            : ""}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[...student.payments]
+                        .sort((a, b) => {
+                          const aVal =
+                            paymentSort.key === "date"
+                              ? new Date(a.date).getTime()
+                              : a.amount;
+                          const bVal =
+                            paymentSort.key === "date"
+                              ? new Date(b.date).getTime()
+                              : b.amount;
+                          return paymentSort.dir === "asc"
+                            ? aVal - bVal
+                            : bVal - aVal;
+                        })
+                        .map((p) => (
+                          <TableRow key={p.id}>
+                            <TableCell>
+                              {new Date(p.date).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {p.referenceNumber}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              £{p.amount.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No payments recorded.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Record Payment Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Record Payment</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {paymentError && (
+                <p className="text-sm text-destructive bg-destructive/10 p-2 rounded mb-4">
+                  {paymentError}
+                </p>
+              )}
+              {paymentSuccess && (
+                <p className="text-sm text-green-600 bg-green-600/10 p-2 rounded mb-4">
+                  {paymentSuccess}
+                </p>
+              )}
+              <form onSubmit={handleRecordPayment} className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-muted p-3 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Total Fee</p>
-                    <p className="text-lg font-bold">£{student.fee.totalAmount.toFixed(2)}</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="payAmount">Amount (£) *</Label>
+                    <Input
+                      id="payAmount"
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      max={student.fee?.totalAmount ?? 0}
+                      value={paymentForm.amount}
+                      onChange={(e) =>
+                        setPaymentForm((p) => ({ ...p, amount: e.target.value }))
+                      }
+                      placeholder="0.00"
+                    />
                   </div>
-                  <div className="bg-muted p-3 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Amount Paid</p>
-                    <p className="text-lg font-bold text-green-600">
-                      £{student.balance.paid.toFixed(2)}
-                    </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="payRef">Reference Number *</Label>
+                    <Input
+                      id="payRef"
+                      value={paymentForm.referenceNumber}
+                      onChange={(e) =>
+                        setPaymentForm((p) => ({
+                          ...p,
+                          referenceNumber: e.target.value,
+                        }))
+                      }
+                      placeholder="e.g. PAY-2026-001"
+                    />
                   </div>
-                  <div className="bg-muted p-3 rounded-lg">
-                    <p className="text-xs text-muted-foreground">
-                      Outstanding
-                      {student.balance.isOverdue && (
-                        <Badge variant="destructive" className="ml-1 text-xs">
-                          Overdue
-                        </Badge>
-                      )}
-                    </p>
-                    <p
-                      className={`text-lg font-bold ${
-                        student.balance.outstanding > 0
-                          ? "text-destructive"
-                          : "text-green-600"
-                      }`}
-                    >
-                      £{student.balance.outstanding.toFixed(2)}
-                    </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="payDate">Date</Label>
+                    <Input
+                      id="payDate"
+                      type="date"
+                      value={paymentForm.date}
+                      onChange={(e) =>
+                        setPaymentForm((p) => ({ ...p, date: e.target.value }))
+                      }
+                    />
                   </div>
                 </div>
-                {student.fee.dueDate && (
-                  <p className="text-sm text-muted-foreground">
-                    Due date: {new Date(student.fee.dueDate).toLocaleDateString()}
-                  </p>
-                )}
-              </>
-            ) : (
-              <p className="text-muted-foreground">No fee record assigned.</p>
-            )}
-
-            {student.payments.length > 0 ? (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Reference</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {student.payments.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell>
-                          {new Date(p.date).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {p.referenceNumber}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          £{p.amount.toFixed(2)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <p className="text-muted-foreground">No payments recorded.</p>
-            )}
-          </CardContent>
-        </Card>
+                <Button type="submit" disabled={paymentSubmitting}>
+                  {paymentSubmitting ? "Recording..." : "Record Payment"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Submissions Tab */}
