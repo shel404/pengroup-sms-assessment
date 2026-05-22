@@ -44,11 +44,13 @@ export function RoleToggle() {
   return (
     <div className="flex items-center gap-2">
       {role === "STAFF" ? (
-        <div className="flex items-center gap-2">
-          <Shield className="size-4 text-primary" />
-          <span className="text-sm font-medium text-primary">Staff</span>
+        <div className="space-y-2 w-full">
+          <div className="flex items-center gap-2">
+            <Shield className="size-4 text-primary" />
+            <span className="text-sm font-medium text-primary">Staff</span>
+          </div>
           <Select value={selectedStudentId} onValueChange={(v) => v && handleStudentSelect(v)}>
-            <SelectTrigger className="w-[200px] h-8 text-xs">
+            <SelectTrigger className="w-full h-8 text-xs">
               <SelectValue placeholder="Switch to Student..." />
             </SelectTrigger>
             <SelectContent>

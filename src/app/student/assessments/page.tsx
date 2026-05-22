@@ -14,31 +14,34 @@ interface Assessment {
 }
 
 export default function StudentAssessmentsPage() {
-  const { userId } = useRole();
+  const { userId, authHeaders } = useRole();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [submitted, setSubmitted] = useState<Set<string>>(new Set());
   const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     async function load() {
+      setLoading(true);
+      const headers = authHeaders();
       const aRes = await fetch("/api/assessments");
       const allAssessments = await aRes.json();
 
       setAssessments(allAssessments);
 
-      // Check which assessments have submissions
       if (userId) {
-        const studentRes = await fetch(`/api/students/${userId}`);
+        const studentRes = await fetch(`/api/students/${userId}`, { headers });
         const studentData = await studentRes.json();
         const submittedIds = new Set<string>(
           studentData.submissions?.map((s: { assessmentId: string }) => s.assessmentId) || []
         );
         setSubmitted(submittedIds);
       }
+      setLoading(false);
     }
     if (userId) load();
-  }, [userId]);
+  }, [userId, authHeaders]);
 
   async function handleUpload(assessmentId: string, e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -51,8 +54,10 @@ export default function StudentAssessmentsPage() {
     formData.append("file", file);
     formData.append("studentId", userId);
 
+    const headers = authHeaders();
     const res = await fetch(`/api/assessments/${assessmentId}/submit`, {
       method: "POST",
+      headers,
       body: formData,
     });
 
@@ -73,6 +78,8 @@ export default function StudentAssessmentsPage() {
   }
 
   if (!userId) return null;
+
+  if (loading) return <p className="text-muted-foreground p-8">Loading...</p>;
 
   return (
     <div className="space-y-6">

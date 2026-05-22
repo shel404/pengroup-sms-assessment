@@ -14,11 +14,13 @@ interface RoleContextType {
   role: Role;
   userId?: string;
   switchRole: (role: Role, userId?: string) => void;
+  authHeaders: () => Record<string, string>;
 }
 
 const RoleContext = createContext<RoleContextType>({
   role: "STAFF",
   switchRole: () => {},
+  authHeaders: () => ({}),
 });
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
@@ -52,8 +54,15 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     [router]
   );
 
+  const authHeaders = useCallback(() => {
+    return {
+      "x-sms-role": state.role,
+      "x-sms-userid": state.userId || "",
+    };
+  }, [state.role, state.userId]);
+
   return (
-    <RoleContext.Provider value={{ ...state, switchRole }}>
+    <RoleContext.Provider value={{ ...state, switchRole, authHeaders }}>
       {children}
     </RoleContext.Provider>
   );

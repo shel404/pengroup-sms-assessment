@@ -16,6 +16,7 @@ export default function StaffDashboard() {
   const [overdueStudents, setOverdueStudents] = useState<
     { id: string; studentId: string; fullName: string; balance: number }[]
   >([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -34,6 +35,7 @@ export default function StaffDashboard() {
         ).length,
       });
       setOverdueStudents(overdue);
+      setLoading(false);
     }
     load();
   }, []);
@@ -45,8 +47,12 @@ export default function StaffDashboard() {
         <p className="text-muted-foreground">Registry overview</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      {loading ? (
+        <p className="text-muted-foreground">Loading...</p>
+      ) : (
+        <>
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -127,6 +133,8 @@ export default function StaffDashboard() {
           )}
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 }

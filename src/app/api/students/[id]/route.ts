@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSession, requireOwnership } from "@/lib/auth";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const session = getSession(request);
+  const isStudent = session?.role === "STUDENT";
+
+  // Students can only access their own data
+  if (isStudent && !requireOwnership(request, params.id)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
   const student = await prisma.student.findUnique({
     where: { id: params.id },
     include: {
@@ -16,6 +25,7 @@ export async function GET(
         orderBy: { submittedAt: "desc" },
       },
       grades: {
+        where: isStudent ? { isPublished: true } : undefined,
         include: { assessment: { select: { title: true, module: true } } },
       },
     },

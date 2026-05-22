@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
@@ -12,9 +13,12 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const session = getSession(request);
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
-  const studentId = formData.get("studentId") as string | null;
+
+  // Derive studentId from auth header, fall back to form field for backward compat
+  const studentId = session?.userId || (formData.get("studentId") as string | null);
 
   if (!file || !studentId) {
     return NextResponse.json(
@@ -40,7 +44,6 @@ export async function POST(
 
   const isLate = new Date() > assessment.deadline;
 
-  // Check if resubmission is allowed
   const existing = await prisma.submission.findUnique({
     where: {
       studentId_assessmentId: {
@@ -57,7 +60,6 @@ export async function POST(
     );
   }
 
-  // Save file
   const ext = file.name.split(".").pop() || "bin";
   const timestamp = Date.now();
   const dir = path.join("public", "uploads", params.id);
@@ -69,7 +71,6 @@ export async function POST(
 
   const fileUrl = `/uploads/${params.id}/${filename}`;
 
-  // Upsert submission
   const submission = await prisma.submission.upsert({
     where: {
       studentId_assessmentId: {

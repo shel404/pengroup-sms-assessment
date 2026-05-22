@@ -24,19 +24,20 @@ interface FeesData {
 }
 
 export default function StudentFeesPage() {
-  const { userId } = useRole();
+  const { userId, authHeaders } = useRole();
   const [data, setData] = useState<FeesData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/students/${userId}/fees`);
+      const headers = authHeaders();
+      const res = await fetch(`/api/students/${userId}/fees`, { headers });
       const json = await res.json();
       setData(json);
       setLoading(false);
     }
     if (userId) load();
-  }, [userId]);
+  }, [userId, authHeaders]);
 
   if (!userId) return null;
   if (loading) return <p className="text-muted-foreground p-8">Loading...</p>;

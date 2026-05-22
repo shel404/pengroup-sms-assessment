@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireOwnership } from "@/lib/auth";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  if (!requireOwnership(request, params.id)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   const student = await prisma.student.findUnique({
     where: { id: params.id },
     include: {

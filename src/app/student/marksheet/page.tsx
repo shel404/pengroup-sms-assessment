@@ -25,19 +25,20 @@ interface MarksheetData {
 }
 
 export default function StudentMarksheetPage() {
-  const { userId } = useRole();
+  const { userId, authHeaders } = useRole();
   const [data, setData] = useState<MarksheetData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/students/${userId}/marksheet`);
+      const headers = authHeaders();
+      const res = await fetch(`/api/students/${userId}/marksheet`, { headers });
       const json = await res.json();
       setData(json);
       setLoading(false);
     }
     if (userId) load();
-  }, [userId]);
+  }, [userId, authHeaders]);
 
   if (!userId) return null;
   if (loading) return <p className="text-muted-foreground p-8">Loading...</p>;
